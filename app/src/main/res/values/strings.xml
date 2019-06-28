@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">GeoCatolica</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_yes">YES</string>
+    <string name="btn_no">NO</string>
+
+    <string name="dev_btn_gps">CATCH GPS</string>
+</resources>
