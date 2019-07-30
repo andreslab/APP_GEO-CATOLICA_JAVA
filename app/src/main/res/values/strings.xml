@@ -4,5 +4,6 @@
     <string name="btn_yes">YES</string>
     <string name="btn_no">NO</string>
 
-    <string name="dev_btn_gps">CATCH GPS</string>
+    <string name="dev_btn_gps">SAVE PLACE</string>
+    <string name="title_activity_maps">Map</string>
 </resources>

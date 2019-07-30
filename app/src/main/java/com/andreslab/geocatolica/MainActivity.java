@@ -3,6 +3,7 @@ package com.andreslab.geocatolica;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Vibrator;
@@ -12,19 +13,34 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
     Context context = this;
-    Button fetch;
+    Button btnSave;
+    Button btnMap;
     TextView user_location;
 
     Button btnOk;
@@ -32,12 +48,21 @@ public class MainActivity extends AppCompatActivity {
     Button btnNo;
     private FusedLocationProviderClient mFusedLocationClient;
 
+    private static final String TAG = "MyActivity";
+
+    private Double _latittude;
+    private Double _longitude;
+    private String _namePlace;
+
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        fetch = findViewById(R.id.btn_catch_gps);
+        btnSave = findViewById(R.id.btn_catch_gps);
+        btnMap = findViewById(R.id.btn_map);
         user_location = findViewById(R.id.user_location);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -78,13 +103,76 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        fetch.setOnClickListener(new View.OnClickListener() {
+        btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                fetchLocation();
+                showAlertToSaveName();
             }
         });
+
+        btnMap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                readPlacesFirestore();
+            }
+        });
+
+
+    }
+
+    private void savePlaceFirestore(Double lat, Double log, String namePlace){
+        //ADD DATA FIRESTORE
+        // Create a new user with a first and last name
+        Map<String, Object> user = new HashMap<>();
+        user.put("name", namePlace);
+        user.put("latitude", lat);
+        user.put("longitude", log);
+
+// Add a new document with a generated ID
+        db.collection("places")
+                .add(user)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                        _latittude = 0.0;
+                        _longitude = 0.0;
+                        _namePlace = "";
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding document", e);
+                        _latittude = 0.0;
+                        _longitude = 0.0;
+                        _namePlace = "";
+                    }
+                });
+    }
+
+    private void readPlacesFirestore(){
+        //READ DATA FIRESTORE
+        db.collection("places")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                Log.d(TAG, document.getId() + " => " + document.getData());
+                            }
+
+                            Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
+                            //intent.putExtra("places", ["","",""]);
+
+                            startActivity(intent);
+                        } else {
+                            Log.w(TAG, "Error getting documents.", task.getException());
+                        }
+                    }
+                });
     }
 
     private void fetchLocation() {
@@ -144,8 +232,10 @@ public class MainActivity extends AppCompatActivity {
                                 // Logic to handle location object
                                 Double latittude = location.getLatitude();
                                 Double longitude = location.getLongitude();
-
-                                user_location.setText("Latitude = "+latittude + "\nLongitude = " + longitude);
+                                _latittude = latittude;
+                                _longitude = longitude;
+                                savePlaceFirestore(_latittude, _longitude, _namePlace);
+                                user_location.setText("LAST SAVE : " + _namePlace.toUpperCase());
 
                             }
                         }
@@ -153,6 +243,38 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+    }
+
+    private void showAlertToSaveName(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Ingrese el nombre del lugar");
+
+// Set up the input
+        final EditText input = new EditText(this);
+// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+// Set up the buttons
+        builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                _namePlace = input.getText().toString();
+                fetchLocation();
+
+            }
+        });
+        builder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                _latittude = 0.0;
+                _longitude = 0.0;
+                _namePlace = "";
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 
     @Override

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "313117287512",
+    "firebase_url": "https://testfirebase-4f66f.firebaseio.com",
+    "project_id": "testfirebase-4f66f",
+    "storage_bucket": "testfirebase-4f66f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313117287512:android:eacc6e78788bb5a1",
+        "android_client_info": {
+          "package_name": "com.andreslab.geocatolica"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "313117287512-7b5rlb1ptet1mjbms6arh8vccl03d6es.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3iQAk8g9PpZDxhlmvDxMJ6Yoa9fegYH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "313117287512-7b5rlb1ptet1mjbms6arh8vccl03d6es.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "313117287512-efopc6ce2re0v0hs28hjlkpih5ohmj6c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.lab5.firebase-test.prueba-firebase",
+                "app_store_id": "123456"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
