@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -31,7 +32,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -46,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     Button btnOk;
     Button btnYes;
     Button btnNo;
+    ProgressBar progressBar;
     private FusedLocationProviderClient mFusedLocationClient;
 
     private static final String TAG = "MyActivity";
@@ -65,10 +70,13 @@ public class MainActivity extends AppCompatActivity {
         btnMap = findViewById(R.id.btn_map);
         user_location = findViewById(R.id.user_location);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        progressBar = findViewById(R.id.progressBar);
 
         btnOk = findViewById(R.id.btn_ok);
         btnYes = findViewById(R.id.btn_yes);
         btnNo = findViewById(R.id.btn_no);
+
+        progressBar.setVisibility(View.GONE);
 
 
         btnOk.setOnClickListener(new View.OnClickListener() {
@@ -106,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                progressBar.setVisibility(View.VISIBLE); //to show
                 showAlertToSaveName();
             }
         });
@@ -114,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         btnMap.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                progressBar.setVisibility(View.VISIBLE); //to show
                 readPlacesFirestore();
             }
         });
@@ -135,19 +144,21 @@ public class MainActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                        Log.i(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
                         _latittude = 0.0;
                         _longitude = 0.0;
                         _namePlace = "";
+                        progressBar.setVisibility(View.GONE);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding document", e);
+                        Log.i(TAG, "Error adding document", e);
                         _latittude = 0.0;
                         _longitude = 0.0;
                         _namePlace = "";
+                        progressBar.setVisibility(View.GONE);
                     }
                 });
     }
@@ -160,17 +171,29 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
+                            Log.i(TAG,  "LOADING DATA...");
+                            Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
+
+                            ArrayList<String> arrayName = new ArrayList<String>();
+                            ArrayList<String> arrayLatitude = new ArrayList<String>();
+                            ArrayList<String> arrayLongitude = new ArrayList<String>();
                             for (QueryDocumentSnapshot document : task.getResult()) {
-                                Log.d(TAG, document.getId() + " => " + document.getData());
+                                Log.i(TAG, document.getId() + " => " + document.getData());
+                                arrayName.add(document.getData().get("name").toString());
+                                arrayLatitude.add(document.getData().get("latitude").toString());
+                                arrayLongitude.add(document.getData().get("longitude").toString());
                             }
 
-                            Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
-                            //intent.putExtra("places", ["","",""]);
-
+                            intent.putExtra("listName", arrayName);
+                            intent.putExtra("listLatitude", arrayLatitude);
+                            intent.putExtra("listLongitude", arrayLongitude);
                             startActivity(intent);
                         } else {
-                            Log.w(TAG, "Error getting documents.", task.getException());
+                            Log.i(TAG, "Error getting documents.", task.getException());
+
                         }
+
+                        progressBar.setVisibility(View.GONE);
                     }
                 });
     }
@@ -235,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
                                 _latittude = latittude;
                                 _longitude = longitude;
                                 savePlaceFirestore(_latittude, _longitude, _namePlace);
-                                user_location.setText("LAST SAVE : " + _namePlace.toUpperCase());
+                                user_location.setText("LAST PLACE : " + _namePlace.toUpperCase());
 
                             }
                         }
@@ -271,6 +294,7 @@ public class MainActivity extends AppCompatActivity {
                 _longitude = 0.0;
                 _namePlace = "";
                 dialog.cancel();
+                progressBar.setVisibility(View.GONE);
             }
         });
 
