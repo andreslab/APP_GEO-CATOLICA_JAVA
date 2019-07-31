@@ -120,6 +120,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         btnYes = findViewById(R.id.btn_yes);
         btnNo = findViewById(R.id.btn_no);
 
+        resetParams();
+
         progressBar.setVisibility(View.GONE);
 
 
@@ -171,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
-        
+
         //CATCH GPS TIMER
         // we add permissions we need to request location of the users
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
