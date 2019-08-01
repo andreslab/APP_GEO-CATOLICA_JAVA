@@ -59,6 +59,13 @@
                 android:text="MAPA"
                 android:textColor="#FDFDFD" />
 
+            <Button
+                android:id="@+id/btn_distance"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1.3"
+                android:text="@string/title_btn_distance" />
+
         </LinearLayout>
 
     </LinearLayout>

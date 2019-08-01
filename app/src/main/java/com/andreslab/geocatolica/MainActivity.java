@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.media.MediaPlayer;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -15,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -70,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
     Context context = this;
     Button btnSave;
+    Button btnDistance;
     Button btnMap;
     TextView user_location;
 
@@ -86,6 +89,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private String _namePlace;
 
     FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    ArrayList<String> arrayName = new ArrayList<String>();
+    ArrayList<String> arrayLatitude = new ArrayList<String>();
+    ArrayList<String> arrayLongitude = new ArrayList<String>();
+
+    private MediaPlayer sound1;
+    private MediaPlayer sound2;
+    private MediaPlayer sound3;
+    private MediaPlayer sound4;
+    private MediaPlayer sound5;
+    private MediaPlayer sound6;
 
 
     //---------------------------------
@@ -105,6 +119,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     //---------------------------------
 
+    double minDistanceMeters = 5.0; //rango de distance en metros
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         btnSave = findViewById(R.id.btn_catch_gps);
         btnMap = findViewById(R.id.btn_map);
+        btnDistance = findViewById(R.id.btn_distance);
         user_location = findViewById(R.id.user_location);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         progressBar = findViewById(R.id.progressBar);
@@ -121,6 +138,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         btnNo = findViewById(R.id.btn_no);
 
         resetParams();
+
+        sound1 = MediaPlayer.create(this, R.raw.sound1);
+        sound2 = MediaPlayer.create(this, R.raw.sound2);
+        sound3 = MediaPlayer.create(this, R.raw.sound3);
+        sound4 = MediaPlayer.create(this, R.raw.sound4);
+        sound5 = MediaPlayer.create(this, R.raw.sound5);
+        sound6 = MediaPlayer.create(this, R.raw.sound6);
 
         progressBar.setVisibility(View.GONE);
 
@@ -169,7 +193,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onClick(View view) {
                 progressBar.setVisibility(View.VISIBLE); //to show
-                readPlacesFirestore();
+                readPlacesFirestore(true);
+            }
+        });
+
+        btnDistance.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                progressBar.setVisibility(View.VISIBLE); //to show
+                showAlertToAssignRange();
             }
         });
 
@@ -194,7 +226,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 addConnectionCallbacks(this).
                 addOnConnectionFailedListener(this).build();
 
+        user_location.setText("D: "+ minDistanceMeters + " m" + " | PLACE : ");
 
+        readPlacesFirestore(false);
     }
 
     private void resetParams(){
@@ -246,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
-    private void readPlacesFirestore(){
+    private void readPlacesFirestore(final Boolean goToMap){
         //READ DATA FIRESTORE
         db.collection("places")
                 .get()
@@ -257,9 +291,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             Log.i(TAG,  "LOADING DATA...");
                             Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
 
-                            ArrayList<String> arrayName = new ArrayList<String>();
-                            ArrayList<String> arrayLatitude = new ArrayList<String>();
-                            ArrayList<String> arrayLongitude = new ArrayList<String>();
+
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 Log.i(TAG, document.getId() + " => " + document.getData());
                                 arrayName.add(document.getData().get("name").toString());
@@ -270,7 +302,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             intent.putExtra("listName", arrayName);
                             intent.putExtra("listLatitude", arrayLatitude);
                             intent.putExtra("listLongitude", arrayLongitude);
-                            startActivity(intent);
+                            if (goToMap){startActivity(intent);}
+
                         } else {
                             Log.i(TAG, "Error getting documents.", task.getException());
 
@@ -279,6 +312,55 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         progressBar.setVisibility(View.GONE);
                     }
                 });
+    }
+
+    private void checkPlaceInRange(Double minDistance_meters){
+        Double minDistanceKm = minDistance_meters / 1000; //convertir metros a kilometros
+        Pair<String, Double> data = detectNearstPlaces();
+        if (data.second <= minDistanceKm) {
+            //esta en el rango
+            switch (data.first) {
+                case "fayh":
+                    Log.i(TAG, "Code: fayh");
+                    sound1.start();
+                case "come1":
+                    Log.i(TAG, "Code come1");
+                    sound2.start();
+                case "cien":
+                    Log.i(TAG, "Code: cien");
+                    sound3.start();
+                    //test
+                case "bom":
+                    Log.i(TAG, "code: bom");
+                    sound4.start();
+            }
+        }
+    }
+
+    private Pair<String, Double> detectNearstPlaces(){
+            String namePlaceNearst = "";
+            Double nearstDistance = 200.0; //distancia mas corta, valor random alto, medida en KM
+        for (int i = 0; i < arrayName.size(); i++){
+
+            Double endLatitude = Double.valueOf(arrayLatitude.get(i));
+            Double endLongitude = Double.valueOf(arrayLongitude.get(i));
+            Double distance = distanceBetweenTwoPoint(_latittude, _longitude, endLatitude, endLongitude);
+
+            if (distance < nearstDistance){
+                //la nueva distancia es mas pequena que la guardada
+                nearstDistance = distance;
+                namePlaceNearst = arrayName.get(i);
+            }
+        }
+
+        return new Pair<String, Double>(namePlaceNearst, nearstDistance);
+    }
+
+    public static double distanceBetweenTwoPoint(double startLat, double startLong,
+                                  double endLat, double endLong){
+        //KM
+        return HaversineDistance.distance(startLat, startLong,
+                endLat, endLong);
     }
 
     /*private void fetchLocation() {
@@ -351,6 +433,36 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }*/
 
+    private void showAlertToAssignRange(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Ingrese el rango de istancia en metros");
+
+// Set up the input
+        final EditText input = new EditText(this);
+// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(input);
+
+// Set up the buttons
+        builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                minDistanceMeters = Double.valueOf(input.getText().toString());
+                user_location.setText("D: "+ minDistanceMeters + " m" + " | PLACE : " + _namePlace.toUpperCase());
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+        builder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                progressBar.setVisibility(View.GONE);
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
     private void showAlertToSaveName(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Ingrese el nombre del lugar");
@@ -368,7 +480,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 _namePlace = input.getText().toString();
                 //fetchLocation();
                 savePlaceFirestore(_latittude, _longitude, _namePlace);
-                user_location.setText("LAST PLACE : " + _namePlace.toUpperCase());
+                user_location.setText("D: "+ minDistanceMeters + " m" + " | PLACE : " + _namePlace.toUpperCase());
 
             }
         });
@@ -480,6 +592,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             _latittude = location.getLatitude();
             _longitude = location.getLongitude();
             activeBtnSave();
+            checkPlaceInRange(minDistanceMeters);
             Log.i(TAG, "Latitude : " + location.getLatitude() + "\nLongitude : " + location.getLongitude());
             //locationTv.setText("Latitude : " + location.getLatitude() + "\nLongitude : " + location.getLongitude());
         }
@@ -517,6 +630,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             _latittude = location.getLatitude();
             _longitude = location.getLongitude();
             activeBtnSave();
+            checkPlaceInRange(minDistanceMeters);
             Log.i(TAG, "Latitude : " + location.getLatitude() + "\nLongitude : " + location.getLongitude());
             //locationTv.setText("Latitude : " + location.getLatitude() + "\nLongitude : " + location.getLongitude());
         }
