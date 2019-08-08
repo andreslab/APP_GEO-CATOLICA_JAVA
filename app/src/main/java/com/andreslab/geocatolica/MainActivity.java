@@ -101,6 +101,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private MediaPlayer sound5;
     private MediaPlayer sound6;
 
+    private MediaPlayer audio_resume_fayh;
+    private MediaPlayer audio_intro_fayh;
+
+    private String lastPoint;
+    private Boolean lastPlayEqual;
+    private action_ok actionBtnOk;
+
 
     //---------------------------------
 
@@ -121,6 +128,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     double minDistanceMeters = 5.0; //rango de distance en metros
 
+    enum action_ok {
+        INFO,
+        INFO_FAH,
+        INFO_COME,
+        INFO_BOM
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,6 +151,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         btnYes = findViewById(R.id.btn_yes);
         btnNo = findViewById(R.id.btn_no);
 
+        actionBtnOk = action_ok.INFO;
+        lastPlayEqual = false;
+
         resetParams();
 
         sound1 = MediaPlayer.create(this, R.raw.sound1);
@@ -145,6 +162,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         sound4 = MediaPlayer.create(this, R.raw.sound4);
         sound5 = MediaPlayer.create(this, R.raw.sound5);
         sound6 = MediaPlayer.create(this, R.raw.sound6);
+
+        audio_resume_fayh = MediaPlayer.create(this, R.raw.audio_fayh);
+        audio_intro_fayh = MediaPlayer.create(this, R.raw.intro_fayh);
 
         progressBar.setVisibility(View.GONE);
 
@@ -160,6 +180,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 // To repeat the pattern from any other point, you could increase the index, e.g. '1'
                 // -1  repeat once
                 vibrator.vibrate(pattern, -1);
+
+
+                audio_intro_fayh.pause();
+                sound1.pause();
+                sound2.pause();
+                sound3.pause();
+                sound4.pause();
+                sound5.pause();
+                sound6.pause();
+
+                if (actionBtnOk == action_ok.INFO_FAH){
+                    audio_resume_fayh.start();
+                }
+
+                if (actionBtnOk == action_ok.INFO_BOM){
+                    audio_resume_fayh.start();
+                }
             }
         });
 
@@ -321,20 +358,45 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             //esta en el rango
             switch (data.first) {
                 case "fayh":
+                    if (!audio_resume_fayh.isPlaying()) {
+                        if (lastPoint == data.first) {
+                            sound1.start();
+                        }else{
+                            audio_intro_fayh.start();
+                        }
+                    }
+                    actionBtnOk = action_ok.INFO_FAH;
                     Log.i(TAG, "Code: fayh");
-                    sound1.start();
+                    lastPoint = data.first;
                 case "come1":
                     Log.i(TAG, "Code come1");
+                    actionBtnOk = action_ok.INFO_COME;
                     sound2.start();
+                    lastPoint = data.first;
                 case "cien":
                     Log.i(TAG, "Code: cien");
                     sound3.start();
+                    lastPoint = data.first;
                     //test
                 case "bom":
+                    if (!audio_resume_fayh.isPlaying()) {
+                        if (lastPoint == data.first) {
+                            sound4.start();
+                        }else{
+                            audio_intro_fayh.start();
+                        }
+                    }
+                    actionBtnOk = action_ok.INFO_BOM;
                     Log.i(TAG, "code: bom");
-                    sound4.start();
+                    lastPoint = data.first;
             }
+        }else{
+            actionBtnOk = action_ok.INFO;
         }
+    }
+
+    private void pauseAllSound(){
+
     }
 
     private Pair<String, Double> detectNearstPlaces(){
