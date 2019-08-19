@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.andreslab.geocatolica">
+    package="com.grupodavinci.geocatolica">
 
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
@@ -33,11 +33,11 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name="com.grupodavinci.geocatolica.MapsActivity"
             android:label="@string/title_activity_maps"
             android:configChanges="orientation"
             android:screenOrientation="portrait"></activity>
-        <activity android:name=".MainActivity"
+        <activity android:name="com.grupodavinci.geocatolica.MainActivity"
             android:configChanges="orientation"
             android:screenOrientation="portrait">
             <intent-filter>

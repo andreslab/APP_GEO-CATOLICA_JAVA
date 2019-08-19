@@ -1,4 +1,4 @@
-package com.andreslab.geocatolica;
+package com.grupodavinci.geocatolica;
 
 import android.Manifest;
 import android.content.Context;
@@ -10,7 +10,6 @@ import android.media.MediaPlayer;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,6 +22,7 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.grupodavinci.geocatolica.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -61,6 +61,7 @@ import android.widget.Toast;
 //-------------------------------------
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -181,8 +182,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 // -1  repeat once
                 vibrator.vibrate(pattern, -1);
 
+                if (audio_resume_fayh.isPlaying()){
+                    audio_resume_fayh.pause();
+                    audio_resume_fayh.seekTo(0);
+                }
 
-                audio_intro_fayh.pause();
                 sound1.pause();
                 sound2.pause();
                 sound3.pause();
@@ -191,11 +195,24 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 sound6.pause();
 
                 if (actionBtnOk == action_ok.INFO_FAH){
-                    audio_resume_fayh.start();
+                    /*if (audio_intro_fayh.isPlaying()){
+                        audio_intro_fayh.pause();
+                        audio_intro_fayh.reset();
+                    }else{
+                        try {
+                            audio_intro_fayh.prepare();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        audio_intro_fayh.start();
+                    }*/
+                    audio_intro_fayh.seekTo(0);
+                    audio_intro_fayh.start();
                 }
 
                 if (actionBtnOk == action_ok.INFO_BOM){
-                    audio_resume_fayh.start();
+                    audio_intro_fayh.reset();
+                    audio_intro_fayh.start();
                 }
             }
         });
@@ -206,6 +223,41 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
                 long[] pattern = {0, 100, 200, 300, 500};
                 vibrator.vibrate(pattern, -1);
+
+                if (audio_intro_fayh.isPlaying()){
+                    audio_intro_fayh.pause();
+                    audio_intro_fayh.seekTo(0);
+                }
+
+
+                sound1.pause();
+                sound2.pause();
+                sound3.pause();
+                sound4.pause();
+                sound5.pause();
+                sound6.pause();
+
+                if (actionBtnOk == action_ok.INFO_FAH){
+                    /*if (audio_resume_fayh.isPlaying()){
+                        audio_resume_fayh.pause();
+                        audio_resume_fayh.reset();
+                    }else{
+                        try {
+                            audio_resume_fayh.prepare();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        audio_resume_fayh.start();
+                    }*/
+                    audio_resume_fayh.seekTo(0);
+                    audio_resume_fayh.start();
+
+                }
+
+                if (actionBtnOk == action_ok.INFO_BOM){
+                    audio_resume_fayh.reset();
+                    audio_resume_fayh.start();
+                }
             }
         });
 
@@ -215,6 +267,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
                 long[] pattern = {0, 500, 300, 200, 100};
                 vibrator.vibrate(pattern, -1);
+
+                audio_intro_fayh.pause();
+                audio_resume_fayh.pause();
+                audio_intro_fayh.reset();
+                audio_resume_fayh.reset();
+                sound1.pause();
+                sound2.pause();
+                sound3.pause();
+                sound4.pause();
+                sound5.pause();
+                sound6.pause();
             }
         });
 

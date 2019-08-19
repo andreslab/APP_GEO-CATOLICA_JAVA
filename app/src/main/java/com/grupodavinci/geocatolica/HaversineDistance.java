@@ -1,4 +1,4 @@
-package com.andreslab.geocatolica;
+package com.grupodavinci.geocatolica;
 
 /**
  * This is the implementation Haversine Distance Algorithm between two places

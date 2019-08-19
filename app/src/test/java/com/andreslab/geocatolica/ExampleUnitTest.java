@@ -1,4 +1,4 @@
-package com.andreslab.geocatolica;
+package com.grupodavinci.geocatolica;
 
 import org.junit.Test;
 
