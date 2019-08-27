@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private GoogleApiClient googleApiClient;
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private LocationRequest locationRequest;
-    private static final long UPDATE_INTERVAL = 5000, FASTEST_INTERVAL = 5000; // = 5 seconds
+    private static final long UPDATE_INTERVAL = 4000, FASTEST_INTERVAL = 4000; // = 5 seconds
     // lists for permissions
     private ArrayList<String> permissionsToRequest;
     private ArrayList<String> permissionsRejected = new ArrayList<>();
@@ -164,6 +164,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         sound5 = MediaPlayer.create(this, R.raw.sound5);
         sound6 = MediaPlayer.create(this, R.raw.sound6);
 
+        sound1.setLooping(true);
+        //sound2.setLooping(true);
+
         audio_resume_fayh = MediaPlayer.create(this, R.raw.audio_fayh);
         audio_intro_fayh = MediaPlayer.create(this, R.raw.intro_fayh);
 
@@ -182,36 +185,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 // -1  repeat once
                 vibrator.vibrate(pattern, -1);
 
-                if (audio_resume_fayh.isPlaying()){
-                    audio_resume_fayh.pause();
-                    audio_resume_fayh.seekTo(0);
-                }
+                stopPlaying();
 
-                sound1.pause();
-                sound2.pause();
-                sound3.pause();
-                sound4.pause();
-                sound5.pause();
-                sound6.pause();
+                /*sound1.pause();
+                sound2.pause();*/
 
                 if (actionBtnOk == action_ok.INFO_FAH){
-                    /*if (audio_intro_fayh.isPlaying()){
-                        audio_intro_fayh.pause();
-                        audio_intro_fayh.reset();
-                    }else{
-                        try {
-                            audio_intro_fayh.prepare();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        audio_intro_fayh.start();
-                    }*/
-                    audio_intro_fayh.seekTo(0);
+
+                    stopPlaying();
+                    audio_intro_fayh = MediaPlayer.create(getApplicationContext(), R.raw.intro_fayh);
                     audio_intro_fayh.start();
                 }
 
                 if (actionBtnOk == action_ok.INFO_BOM){
-                    audio_intro_fayh.reset();
+                    stopPlaying();
+                    audio_intro_fayh = MediaPlayer.create(getApplicationContext(), R.raw.intro_fayh);
                     audio_intro_fayh.start();
                 }
             }
@@ -224,38 +212,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 long[] pattern = {0, 100, 200, 300, 500};
                 vibrator.vibrate(pattern, -1);
 
-                if (audio_intro_fayh.isPlaying()){
-                    audio_intro_fayh.pause();
-                    audio_intro_fayh.seekTo(0);
-                }
+                stopPlaying();
 
+                /*sound1.pause();
+                sound2.pause();*/
 
-                sound1.pause();
-                sound2.pause();
-                sound3.pause();
-                sound4.pause();
-                sound5.pause();
-                sound6.pause();
 
                 if (actionBtnOk == action_ok.INFO_FAH){
-                    /*if (audio_resume_fayh.isPlaying()){
-                        audio_resume_fayh.pause();
-                        audio_resume_fayh.reset();
-                    }else{
-                        try {
-                            audio_resume_fayh.prepare();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        audio_resume_fayh.start();
-                    }*/
-                    audio_resume_fayh.seekTo(0);
+
+                    stopPlaying();
+                    audio_resume_fayh = MediaPlayer.create(getApplicationContext(), R.raw.audio_fayh);
                     audio_resume_fayh.start();
 
                 }
 
                 if (actionBtnOk == action_ok.INFO_BOM){
-                    audio_resume_fayh.reset();
+                    stopPlaying();
+                    audio_resume_fayh = MediaPlayer.create(getApplicationContext(), R.raw.audio_fayh);
                     audio_resume_fayh.start();
                 }
             }
@@ -268,16 +241,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 long[] pattern = {0, 500, 300, 200, 100};
                 vibrator.vibrate(pattern, -1);
 
-                audio_intro_fayh.pause();
-                audio_resume_fayh.pause();
-                audio_intro_fayh.reset();
-                audio_resume_fayh.reset();
-                sound1.pause();
-                sound2.pause();
-                sound3.pause();
-                sound4.pause();
-                sound5.pause();
-                sound6.pause();
+                stopPlaying();
+
+                /*sound1.pause();
+                sound2.pause();*/
             }
         });
 
@@ -343,6 +310,29 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private void activeBtnSave(){
         btnSave.setEnabled(true);
         btnSave.setAlpha(1f);
+    }
+
+    private void stopPlayingSoundRepeat() {
+        if (sound1 != null) {
+            sound1.stop();
+            sound1.release();
+            sound1 = null;
+        }
+    }
+
+
+    private void stopPlaying() {
+        if (audio_resume_fayh != null) {
+            audio_resume_fayh.stop();
+            audio_resume_fayh.release();
+            audio_resume_fayh = null;
+        }
+
+        if (audio_intro_fayh != null) {
+            audio_intro_fayh.stop();
+            audio_intro_fayh.release();
+            audio_intro_fayh = null;
+        }
     }
 
     private void savePlaceFirestore(Double lat, Double log, String namePlace){
@@ -417,41 +407,61 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private void checkPlaceInRange(Double minDistance_meters){
         Double minDistanceKm = minDistance_meters / 1000; //convertir metros a kilometros
         Pair<String, Double> data = detectNearstPlaces();
+
+        //sound1.pause();
+
         if (data.second <= minDistanceKm) {
             //esta en el rango
             switch (data.first) {
                 case "fayh":
-                    if (!audio_resume_fayh.isPlaying()) {
-                        if (lastPoint == data.first) {
-                            sound1.start();
-                        }else{
-                            audio_intro_fayh.start();
+
+                    if (audio_resume_fayh != null){
+                        if (!audio_resume_fayh.isPlaying()) {
+                            if (lastPoint == data.first) {
+                                stopPlayingSoundRepeat();
+                                sound1 = MediaPlayer.create(this, R.raw.sound1);
+                                sound1.start();
+                            } else {
+                                audio_intro_fayh.start();
+                            }
                         }
+                        lastPoint = data.first;
+                    }else{
+                        audio_resume_fayh = MediaPlayer.create(this, R.raw.audio_fayh);
                     }
                     actionBtnOk = action_ok.INFO_FAH;
                     Log.i(TAG, "Code: fayh");
-                    lastPoint = data.first;
+
                 case "come1":
                     Log.i(TAG, "Code come1");
                     actionBtnOk = action_ok.INFO_COME;
-                    sound2.start();
-                    lastPoint = data.first;
+
                 case "cien":
                     Log.i(TAG, "Code: cien");
-                    sound3.start();
-                    lastPoint = data.first;
+
                     //test
                 case "bom":
-                    if (!audio_resume_fayh.isPlaying()) {
-                        if (lastPoint == data.first) {
-                            sound4.start();
-                        }else{
-                            audio_intro_fayh.start();
+
+                    if (audio_resume_fayh != null) {
+                        Log.i(TAG, "paso1");
+                        if (!audio_resume_fayh.isPlaying()) {
+                            Log.i(TAG, "paso2");
+                            if (lastPoint == data.first) {
+                                Log.i(TAG, "paso3");
+                                stopPlayingSoundRepeat();
+                                sound1 = MediaPlayer.create(this, R.raw.sound1);
+                                sound1.start();
+                            }else{
+                                Log.i(TAG, "paso4");
+                                audio_intro_fayh.start();
+                            }
                         }
+                        lastPoint = data.first;
+                    }else{
+                        audio_resume_fayh = MediaPlayer.create(this, R.raw.audio_fayh);
                     }
-                    actionBtnOk = action_ok.INFO_BOM;
                     Log.i(TAG, "code: bom");
-                    lastPoint = data.first;
+                    actionBtnOk = action_ok.INFO_BOM;
             }
         }else{
             actionBtnOk = action_ok.INFO;
