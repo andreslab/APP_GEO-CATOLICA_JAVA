@@ -72,7 +72,7 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
-    private static final Boolean DEVELOPER = true;
+    private static final Boolean DEVELOPER = false;
 
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
     Context context = this;
@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     //---------------------------------
 
-    double minDistanceMeters = 5.0; //rango de distance en metros
+    double minDistanceMeters = 7.0; //rango de distance en metros
 
     enum action_ok {
         INFO,
@@ -436,6 +436,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 sound1 = MediaPlayer.create(this, R.raw.sound1);
                                 sound1.start();
                             } else {
+                                stopPlayingSoundRepeat();
+                                audio_intro_fayh = MediaPlayer.create(this, R.raw.intro_fayh);
                                 audio_intro_fayh.start();
                             }
                         }
@@ -467,6 +469,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 sound1.start();
                             }else{
                                 Log.i(TAG, "paso4");
+                                stopPlayingSoundRepeat();
+                                audio_intro_fayh = MediaPlayer.create(this, R.raw.intro_fayh);
                                 audio_intro_fayh.start();
                             }
                         }
