@@ -17,8 +17,10 @@ import android.text.InputType;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -70,6 +72,8 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
+    private static final Boolean DEVELOPER = true;
+
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
     Context context = this;
     Button btnSave;
@@ -81,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     Button btnYes;
     Button btnNo;
     ProgressBar progressBar;
+    LinearLayout bar_dev;
     private FusedLocationProviderClient mFusedLocationClient;
 
     private static final String TAG = "MyActivity";
@@ -147,6 +152,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         user_location = findViewById(R.id.user_location);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         progressBar = findViewById(R.id.progressBar);
+
+        bar_dev = findViewById(R.id.linearLayout2);
+        if (DEVELOPER){
+            ViewGroup.LayoutParams params = bar_dev.getLayoutParams();
+// Changes the height and width to the specified *pixels*
+            params.height = 0;
+            //params.width = 0;
+            bar_dev.setLayoutParams(params);
+        }
 
         btnOk = findViewById(R.id.btn_ok);
         btnYes = findViewById(R.id.btn_yes);
