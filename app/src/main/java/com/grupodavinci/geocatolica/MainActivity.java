@@ -4,10 +4,12 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -72,6 +74,7 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
+    //OCULTAR (FALSE) Y MOSTRAR (TRUE) BARRA DE DESARROLLO
     private static final Boolean DEVELOPER = false;
 
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
@@ -90,16 +93,20 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private static final String TAG = "MyActivity";
 
+    //CONTIENE TUS DATOS DE TU POSICION ACTUAL
     private Double _latittude;
     private Double _longitude;
     private String _namePlace;
 
+    //FIREBASE
     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    //CONTIENEN TODAS LAS POSICIONES (PUNTOS) DE LOS LUGARES GUARDADOS
     ArrayList<String> arrayName = new ArrayList<String>();
     ArrayList<String> arrayLatitude = new ArrayList<String>();
     ArrayList<String> arrayLongitude = new ArrayList<String>();
 
+    //SONIDOS (SIN VOZ) CUANDO ESTAS CERCA DE UN PUNTO
     private MediaPlayer sound1;
     private MediaPlayer sound2;
     private MediaPlayer sound3;
@@ -107,9 +114,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private MediaPlayer sound5;
     private MediaPlayer sound6;
 
+    //AUDIO DEL TUTORIAL
+    private MediaPlayer tutorial;
+
+    //VARIABLES DE AUDIOS
     private MediaPlayer audio_resume_fayh;
     private MediaPlayer audio_intro_fayh;
 
+    //CONTIENE EL NOMBRE DE  LA ULTIMA FACULTAD RASTREADA
     private String lastPoint;
     private Boolean lastPlayEqual;
     private action_ok actionBtnOk;
@@ -117,12 +129,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     //---------------------------------
 
+    //CONFIGURACION DE GPS
+
     private Location location;
     //private TextView locationTv;
     private GoogleApiClient googleApiClient;
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private LocationRequest locationRequest;
-    private static final long UPDATE_INTERVAL = 4000, FASTEST_INTERVAL = 4000; // = 5 seconds
+
+    //TIEMPO QUE TARDA EN REFRESCAR TU POSICION
+    private static final long UPDATE_INTERVAL = 4000, FASTEST_INTERVAL = 4000; // = 4 seconds
     // lists for permissions
     private ArrayList<String> permissionsToRequest;
     private ArrayList<String> permissionsRejected = new ArrayList<>();
@@ -132,7 +148,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     //---------------------------------
 
-    double minDistanceMeters = 7.0; //rango de distance en metros
+    //DISTANCIA DEFAULT DEL RANGO QUE DETECTA PUNTOS CERCANOS
+    double minDistanceMeters = 6.0; //rango de distance en metros
 
     enum action_ok {
         INFO,
@@ -141,11 +158,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         INFO_BOM
     }
 
+    //LA PRIMERA FUNCION QUE SE EJECUTA
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //VINCULA CODIGO CON INTERFAZ
         btnSave = findViewById(R.id.btn_catch_gps);
         btnMap = findViewById(R.id.btn_map);
         btnDistance = findViewById(R.id.btn_distance);
@@ -153,8 +172,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         progressBar = findViewById(R.id.progressBar);
 
+
+        //EJECUTA 1 VEZ EL TURORIAL AL INSTALAR LA APLICACION
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!prefs.getBoolean("firstTime", false)) {
+            // <---- run your one time code here
+            tutorial = MediaPlayer.create(this, R.raw.tutorial);
+            tutorial.start();
+
+            // mark first time has ran.
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("firstTime", true);
+            editor.commit();
+        }
+
+
         bar_dev = findViewById(R.id.linearLayout2);
-        if (DEVELOPER){
+        if (!DEVELOPER){
             ViewGroup.LayoutParams params = bar_dev.getLayoutParams();
 // Changes the height and width to the specified *pixels*
             params.height = 0;
@@ -171,6 +205,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         resetParams();
 
+
+        //DEFINE LOS SONIDOS
         sound1 = MediaPlayer.create(this, R.raw.sound1);
         sound2 = MediaPlayer.create(this, R.raw.sound2);
         sound3 = MediaPlayer.create(this, R.raw.sound3);
@@ -181,12 +217,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         sound1.setLooping(true);
         //sound2.setLooping(true);
 
+        //DEFINE LOS AUDIOS
         audio_resume_fayh = MediaPlayer.create(this, R.raw.audio_fayh);
         audio_intro_fayh = MediaPlayer.create(this, R.raw.intro_fayh);
 
         progressBar.setVisibility(View.GONE);
 
 
+        //CONFIGURA LA ACCION DEL BOTON OK
+        //REPRODUCE LOS AUDIOS DE LUGAR DONDE SE ENCUENTRE
         btnOk.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -219,6 +258,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+        //CONFIGURA LA ACCION DEL BOTON SI
+        //REPRODUCE LOS AUDIOS DE INFORMACION
         btnYes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -248,6 +289,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+        //CONFIGURA LA ACCION DEL BOTON NO
+        //DETIENE AUDIOS QUE SE ESTEN EJECUTANDO Y PRODUCE UN PATRON VIBRACION
         btnNo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -262,6 +305,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+
+        //BOTON QUE GUARDA NUEVA POSICION
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -270,6 +315,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+        //BOTON QUE LLEVA AL MAPA QUE CONTIENE LAS POSICIONES
         btnMap.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -278,6 +324,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+        //BOTON PARA DEFINIR DISTANCIA DE PUNTOS
         btnDistance.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -287,7 +334,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         });
 
 
-        //CATCH GPS TIMER
+        //EJECUTA LA ACTUALIZACION DEL GPS REPETITIVAMENTE
         // we add permissions we need to request location of the users
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -309,9 +356,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         user_location.setText("D: "+ minDistanceMeters + " m" + " | PLACE : ");
 
+
+        //CONSULTA DE BASE DE DATOS DE FIRESTORE
         readPlacesFirestore(false);
     }
 
+    //RESETEA PARAMETROS DE POSICION
     private void resetParams(){
         _latittude = 0.0;
         _longitude = 0.0;
@@ -321,20 +371,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         progressBar.setVisibility(View.GONE);
     }
 
+    //ACTIVA EL BOTON DE GUARDAR NUEVA POSICION AL TENER INFORMACION GPS
     private void activeBtnSave(){
         btnSave.setEnabled(true);
         btnSave.setAlpha(1f);
     }
 
+    //FUNCION PARA DETENER LOS SONIDOS
     private void stopPlayingSoundRepeat() {
         if (sound1 != null) {
             sound1.stop();
             sound1.release();
             sound1 = null;
         }
+        if (tutorial != null){
+            tutorial.stop();
+            tutorial.release();
+            tutorial = null;
+        }
     }
 
-
+    //FUNCION PARA DETENER LOS AUDIOS
     private void stopPlaying() {
         if (audio_resume_fayh != null) {
             audio_resume_fayh.stop();
@@ -347,8 +404,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             audio_intro_fayh.release();
             audio_intro_fayh = null;
         }
+
+        if (tutorial != null){
+            tutorial.stop();
+            tutorial.release();
+            tutorial = null;
+        }
     }
 
+    //FUNCION PARA GUARDAR POSICION EN FIRESTORE
     private void savePlaceFirestore(Double lat, Double log, String namePlace){
         //ADD DATA FIRESTORE
 
@@ -384,6 +448,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
+    //CONSULTA DE DATOS A LA BASE DE DATOS DE FIREBASE - FIRESTORE
     private void readPlacesFirestore(final Boolean goToMap){
         //READ DATA FIRESTORE
         db.collection("places")
@@ -418,6 +483,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 });
     }
 
+
+    //VERIFICA LOS LUGARES GEOLOCALIZADOS QUE SE ENCUENTRAN A UNA DISTANCIA DETERMINADA
     private void checkPlaceInRange(Double minDistance_meters){
         Double minDistanceKm = minDistance_meters / 1000; //convertir metros a kilometros
         Pair<String, Double> data = detectNearstPlaces();
@@ -490,6 +557,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
+    //DETECTA LOS LUGARES MAS CERCANOS
     private Pair<String, Double> detectNearstPlaces(){
             String namePlaceNearst = "";
             Double nearstDistance = 200.0; //distancia mas corta, valor random alto, medida en KM
@@ -509,6 +577,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return new Pair<String, Double>(namePlaceNearst, nearstDistance);
     }
 
+    //COMPARA DOS LOCALIZACIONES GEOPOSICIONADAS Y DEVUELVE LA DISTANCIA ENTRE ELLAS
     public static double distanceBetweenTwoPoint(double startLat, double startLong,
                                   double endLat, double endLong){
         //KM
@@ -586,6 +655,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }*/
 
+    //DEFINE EL RANGO DE DETECCION DE UN PUNTO GEOPOSICIONADO
     private void showAlertToAssignRange(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Ingrese el rango de istancia en metros");
@@ -616,6 +686,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         builder.show();
     }
 
+
+    //ALERTA PARA INGRESAR NUEVA POSICION EOGRAFICA
     private void showAlertToSaveName(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Ingrese el nombre del lugar");
@@ -682,6 +754,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return true;
     }
 
+    //CICLO DE VIDA DE PANTALLA: PANTALLA CARGANDO, PROCESOS INTERNOS (NO SE MUESTRA)
     @Override
     protected void onStart() {
         super.onStart();
@@ -691,6 +764,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    //CICLO DE VIDA DE PANTALLA: PANTALLA APARECE PARA USUARIO
     @Override
     protected void onResume() {
         super.onResume();
@@ -701,6 +775,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    //CICLO DE VIDA DE PANTALLA: PANTALLA EN PAUSA (NO SE MUESTRA)
     @Override
     protected void onPause() {
         super.onPause();
@@ -712,6 +787,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    //ENLACE CON SERVICIOS DE GOOGLE
     private boolean checkPlayServices() {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
@@ -729,8 +805,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return true;
     }
 
+    //CALLBACK: SE EJECUTA CUANDO SE OBTIENE LA GEOPOSICION
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        //VALIDA QUE EL USUARIO DIO LOS PERMISOS NECESARIOS
         if (ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 &&  ActivityCompat.checkSelfPermission(this,
@@ -750,6 +828,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             //locationTv.setText("Latitude : " + location.getLatitude() + "\nLongitude : " + location.getLongitude());
         }
 
+        //INICIA LA ACTUALIZACION AUTOMATICA DE LA GEOPOSICION
         startLocationUpdates();
     }
 
@@ -769,14 +848,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
     }
 
+    //CONEXION DE GPS SUSPENDIDA POR INTERNET
     @Override
     public void onConnectionSuspended(int i) {
     }
 
+    //CONEXION DE GPS PERDIDA
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
     }
 
+    //SI LA POSICION DE GPS CAMBIO
     @Override
     public void onLocationChanged(Location location) {
         if (location != null) {
@@ -789,6 +871,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    //VERIFICA SI TIENES LOS PERMISOS NECSARIOS Y SI NO LOS TIENES TE LOS PIDE
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch(requestCode) {
